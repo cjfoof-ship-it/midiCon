@@ -1,5 +1,6 @@
 
 #include <stdint.h>
+#include <midiCon.h>
 
 #if !defined(__SOFT_FP__) && defined(__ARM_FP)
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
@@ -10,28 +11,28 @@ volatile uint8_t spi_buffer = 0;
 
 void init(void) {
 	// allow clock for all used peripherals
-	RCC_AHB1ENR |= (1U << 0);	// for GPIOA
-	RCC_AHB1ENR |= (1U << 22);	// for DMA2
-	RCC_APB1ENR |= (1U << 0);	// for TIM2
-	RCC_APB2ENR |= (1U << 12);	// for SPI1
+	RCC->AHB1ENR |= (1U << 0);	// for GPIOA
+	RCC->AHB1ENR |= (1U << 22);	// for DMA2
+	RCC->APB1ENR |= (1U << 0);	// for TIM2
+	RCC->APB2ENR |= (1U << 12);	// for SPI1
 
 	// GPIO configuration
 	// PA2 = triggers SH/LD on external shift register
 	GPIOA->MODER &= ~(3U << 4);	//reset
 	GPIOA->MODER |= (2U << 4); //sets AF for PA2
-	GPIOA->AFRL &= ~(FU << 8);	// reset
+	GPIOA->AFRL &= ~(0xFU << 8);	// reset
 	GPIOA->AFRL |= (2U << 8);	//sets AF2 for TIM2_CH3
 	// PA5 = SPI1_SCK, triggers CLK on external shift register
 	GPIOA->MODER &= ~(3U << 10);	//resets
 	GPIOA->MODER |= (2U << 10);	//sets AF for PA5
-	GPIOA->AFRL &= ~(FU << 20);	//resets
+	GPIOA->AFRL &= ~(0xFU << 20);	//resets
 	GPIOA->AFRL |= (5U << 20);		// sets AF5 for SPI1_SCK
-	GPIOA->OSPEERD &= ~(3U << 10);
+	GPIOA->OSPEEDR &= ~(3U << 10);
 	GPIOA->OSPEEDR |= (2U << 10);	// high speed
 	// PA6 for SPI1_MISO, data from external shift register enter
 	GPIOA->MODER &= ~(3U << 12);
 	GPIOA->MODER |= (2U << 12);	// sets PA6 to AF
-	GPIOA->AFRL &= ~(FU << 24);
+	GPIOA->AFRL &= ~(0xFU << 24);
 	GPIOA->AFRL |= (5U << 24);		// AF5 = SPI1_MISO
 	GPIOA->PUPDR &= ~(3U << 12);
 	GPIOA->PUPDR |= (1U << 12);	// pull-up
@@ -78,5 +79,10 @@ void init(void) {
 
 int main(void)
 {
+	init();
 
+	while (1) {
+		uint8_t current_data = spi_buffer;
+		// use the data
+	}
 }

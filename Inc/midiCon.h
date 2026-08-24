@@ -15,7 +15,7 @@ typedef struct {
 	volatile uint32_t	BASE;	// 0x00
 	uint32_t			DUMMY[11];
 	volatile uint32_t	AHB1ENR;	// 0x30
-	uint32_t			DUMMY[3];
+	uint32_t			DUMMY2[3];
 	volatile uint32_t	APB1ENR;	//0x40
 	volatile uint32_t	APB2ENR;	//0x44
 } RCC_TypeDef;
@@ -39,7 +39,7 @@ typedef struct {
 typedef struct {
 	volatile uint32_t	CR1;	//0x00
 	volatile uint32_t	CR2;	//0x04
-	unit32_t			DUMMY[5];
+	uint32_t			DUMMY[5];
 	volatile uint32_t	CCMR2;	//0x1C
 	volatile uint32_t	CCER;	//0x20
 	uint32_t			DUMMY2;
@@ -68,10 +68,10 @@ typedef struct {
 
 // base addresses
 #define RCC		((RCC_TypeDef *) 0x40023800UL)
-#define GPIOAEN	((GPIO_TypeDef *) 0x40020000UL)
-#define TIM2EN	((TIM_TypeDef *) 0x40000000UL)
+#define GPIOA	((GPIO_TypeDef *) 0x40020000UL)
+#define TIM2	((TIM_TypeDef *) 0x40000000UL)
 #define SPI1	((SPI_TypeDef *) 0x40013000UL)
-#define DMA2_Stream0	((DMAStream *) 0x40026410UL)
+#define DMA2_Stream0	((DMAStream_TypeDef *) 0x40026410UL)
 
 
 #endif /* MIDICON_H_ */
