@@ -15,6 +15,11 @@ reading takes place in the background, it does not block the main loop
  * on shift register, Clock Inhibit (pin 15) has to be connected to **GND**, otherwise internal clock does not work properly and MISO reads static value
  * pin PA6 is configured with **internal pull-up** --> if disconnected, it gives stable 1
 
+# file locations
+The core logic and configuration are here:
+ * Src/main.c
+ * Inc/midiCon.h  - custom peripheral structures and memory base addresses
+   
 # read the data
 To read the data, access global variable **spi_buffer** in main loop
 
