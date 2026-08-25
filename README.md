@@ -14,6 +14,8 @@ reading takes place in the background, it does not block the main loop
 # gotchas
  * on shift register, Clock Inhibit (pin 15) has to be connected to **GND**, otherwise internal clock does not work properly and MISO reads static value
  * pin PA6 is configured with **internal pull-up** --> if disconnected, it gives stable 1
+ * **Decoupling Capacitor (100nF):** Placed as close as possible between **Pin 16 (VCC)** and **Pin 8 (GND)** of the SN74HC165N. This suppresses voltage drops and noise caused by high-speed SPI clock switching.
+ *  **Button Pull-Up Resistors (10kΩ):** The circuit implements configuration where buttons switch to **GND**. Each digital input pin (D0–D7) of the shift register is connected to **3.3V (VCC)** via a 10kΩ pull-up resistor to maintain a stable logic `1` when the button is open. Pressing a button pulls the corresponding input pin directly to **GND**, creating a logic `0`. This matches the internal pull-up configuration on the STM32 `PA6` (MISO) line, ensuring consistent active-low signal logic across the system.
 
 # file locations
 The core logic and configuration are here:
