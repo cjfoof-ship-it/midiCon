@@ -27,8 +27,8 @@ typedef struct {
 	volatile uint32_t	OSPEEDR;	//0x08
 	volatile uint32_t	PUPDR;		//0x0C
 	uint32_t			DUMMY2[2];
-	volatile uint16_t	BSSRL;	// low 16 bits to set on 0x18
-	volatile uint16_t	BSSRH;	// high 16 bits to reset on 0x18
+	volatile uint16_t	BSRRL;	// low 16 bits to set on 0x18
+	volatile uint16_t	BSRRH;	// high 16 bits to reset on 0x18
 	uint32_t			DUMMY3;
 	volatile uint32_t	AFRL;	//0x20
 
@@ -39,13 +39,16 @@ typedef struct {
 typedef struct {
 	volatile uint32_t	CR1;	//0x00
 	volatile uint32_t	CR2;	//0x04
-	uint32_t			DUMMY[5];
+	uint32_t			DUMMY;
+	volatile uint32_t	DIER;	//0x0C
+	volatile uint32_t	SR;		//0x10
+	uint32_t			DUMMY2[2];
 	volatile uint32_t	CCMR2;	//0x1C
 	volatile uint32_t	CCER;	//0x20
-	uint32_t			DUMMY2;
+	uint32_t			DUMMY3;
 	volatile uint32_t	PSC;	//0x28
 	volatile uint32_t	ARR;	//0x2C
-	uint32_t			DUMMY3[3];
+	uint32_t			DUMMY4[3];
 	volatile uint32_t	CCR3;	//0x3C
 } TIM_TypeDef;
 
@@ -57,21 +60,17 @@ typedef struct {
 	volatile uint32_t	DR;		//0x0C
 } SPI_TypeDef;
 
-//DMAStream		dma2 stream 0 channel 3 for SPI1_RX
+//NVIC (nested vectored interrupt controller)
 typedef struct {
-	volatile uint32_t	CR;		//0x00
-	volatile uint32_t	NDTR;	//0x04
-	volatile uint32_t	PAR;	//0x08
-	volatile uint32_t	M0AR;	//0x0C
-} DMAStream_TypeDef;
-
+	volatile uint32_t	ISER;	// (interrupt set enalble register)
+} NVIC_TypeDef;
 
 // base addresses
 #define RCC		((RCC_TypeDef *) 0x40023800UL)
 #define GPIOA	((GPIO_TypeDef *) 0x40020000UL)
 #define TIM2	((TIM_TypeDef *) 0x40000000UL)
 #define SPI1	((SPI_TypeDef *) 0x40013000UL)
-#define DMA2_Stream0	((DMAStream_TypeDef *) 0x40026410UL)
+#define NVIC	((NVIC_TypeDef *) 0xE000E100UL)
 
 
 #endif /* MIDICON_H_ */

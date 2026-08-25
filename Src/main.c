@@ -12,22 +12,15 @@ volatile uint8_t spi_buffer = 0;
 void init(void) {
 	// allow clock for all used peripherals
 	RCC->AHB1ENR |= (1U << 0);	// for GPIOA
-	RCC->AHB1ENR |= (1U << 22);	// for DMA2
 	RCC->APB1ENR |= (1U << 0);	// for TIM2
 	RCC->APB2ENR |= (1U << 12);	// for SPI1
 
 	// GPIO configuration
 	// PA2 = triggers SH/LD on external shift register
-	/* turn off for testing
-	GPIOA->MODER &= ~(3U << 4);	//reset
-	GPIOA->MODER |= (2U << 4); //sets AF for PA2
-	GPIOA->AFRL &= ~(0xFU << 8);	// reset
-	GPIOA->AFRL |= (2U << 8);	//sets AF2 for TIM2_CH3
-	*/
 	GPIOA->MODER &= ~(3U << 4);
-	GPIOA->MODER |= (1U << 4);	// NORMAL OUT
+	GPIOA->MODER |= (1U << 4);	// out (01)
 	GPIOA->OSPEEDR |= (2U << 4);
-	GPIOA->BSSRL = (1U <<2);	// LOGICAL 1 (SH/LD HIGH)
+	GPIOA->BSRRL = (1U <<2);	// default logical 1 (SH/LD HIGH)
 	// PA5 = SPI1_SCK, triggers CLK on external shift register
 	GPIOA->MODER &= ~(3U << 10);	//resets
 	GPIOA->MODER |= (2U << 10);	//sets AF for PA5
@@ -51,65 +44,45 @@ void init(void) {
 	SPI1->CR1 |= (1U << 9);			// NSS directed by software
 	SPI1->CR1 |= (1U << 8);			// sets this bit to 1, the value of physical NSS pin is ignored (NSS = negative slave select, but my external shift register doesn't need it)
 	SPI1->CR1 &= ~(1U << 11);		// 0 is for 8-bit data
-	SPI1->CR2 |= (1U << 0);			// Rx buffer DMA enable, received data will be available for direct memory access
 	SPI1->CR1 |= (1U << 6);			// enables SPI
 
 	// TIM2 configuration
 	TIM2->PSC = 8399;				// 84MHz / psc = 10kHz
 	TIM2->ARR = 999;				// 10kHz / arr = 10Hz, 100ms
-	TIM2->CCMR2 &= ~(7U << 8);
-	TIM2->CCMR2 |= (6U << 8);		// 110 = PWM mode 1 for channel 3
-	TIM2->CCMR2 |= (1U << 3);		// output compare 3 preload enable, to store data first in preload register, making the reading more stable
-	TIM2->CCR3 = 10;				// pulse width, 10 tics, ~1micro sec
-	TIM2->CCER |= (1U << 8);		// capture/compare 3 output enable
-	TIM2->CR2 &= ~(7U << 4);
-	TIM2->CR2 |= (2U << 4);			// 10 = update event (for TRGO so it can trigger DMA)
-	TIM2->CR1 |= (1U << 7);			// auto reload-preload, waits until the end of the period before changing the ARR value, adds more stability
+	TIM2->DIER |= (1U << 0);		// update event can start interrupt
+	NVIC->ISER |= (1U << 28);		// specific interrupt (28)
 	TIM2->CR1 |= (1U << 0);			// start TIM2
 
-	// DMA2 configuration for Stream 0
-	DMA2_Stream0->CR &= ~(1 << 0);	// resets
-	while (DMA2_Stream0->CR & 1); 	// wait for it turns off
-	DMA2_Stream0->PAR = (uint32_t)&SPI1->DR;	// source = SPI data register
-	DMA2_Stream0->M0AR = (uint32_t)&spi_buffer;	// destination = spi_buffer
-	DMA2_Stream0->NDTR = 1;			// transmit 1 byte
-	DMA2_Stream0->CR = 0;
-	DMA2_Stream0->CR |= (3U << 25);	// channel 3 for SPI1_RX
-	DMA2_Stream0->CR |= (1U << 16);		// priority medium
-	DMA2_Stream0->CR &= ~(3U << 11);	// peripheral data size = 8 bit
-	DMA2_Stream0->CR &= ~(3U << 13);	// memory size 8 bit
-	DMA2_Stream0->CR |= (1U << 10);		// memory increment (even though it make no difference for 1 byte
-	DMA2_Stream0->CR |= (1U << 8);		// enable circular mode
-	DMA2_Stream0->CR |= (1U << 0);		//enable DMA2_Stream0
 
+}
+
+void TIM2_IRQHandler(void) {
+	if (TIM2->CR1 & (1U << 0)) {	// to make sure timer is running
+		if (TIM2->DIER & (1U << 0)) {	// interrupt is active
+			TIM2->SR &= ~(1U << 0);	// eliminate interrupt flag
+			GPIOA->BSRRH = (1U << 2);	// PA2 to LOW
+			for (volatile int d=0; d<20; d++);
+			GPIOA->BSRRL = (1U << 2);	// PA2 tO HIGH
+
+			volatile uint32_t clear_flags = SPI1->DR;
+			clear_flags = SPI1->SR;
+			SPI1->DR = 0x00;		// starts clock at PA5
+
+			while(!(SPI1->SR & (1U << 0)));	// no more bits in queue
+			spi_buffer = SPI1->DR;
+
+		}
+	}
 }
 
 int main(void)
 {
 	init();
-	/*
+
 	while (1) {
 		uint8_t current_data = spi_buffer;
 		// use the data
 	}
-	*/
 
-	SPI1->CR2 &= ~(1U << 0);
 
-	while (1) {
-		GPIOA->BSSRH = (1U << 2);
-		for (volatile int d=0; d<20; d++);
-		GPIOA->BSSRL = (1U << 2);
-		for (volatile int d=0; d<20; d++);
-
-		volatile uint32_t clear_flags = SPI1->DR;
-		clear_flags = SPI1->SR;
-
-		SPI1->DR = 0x00;
-
-		while (!(SPI1->SR & (1U << 0)));
-		uint8_t current_data = SPI1->DR;
-		spi_buffer = SPI1->DR;
-		for (volatile int i = 0; i<500000; i++);
-	}
 }
