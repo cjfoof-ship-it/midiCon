@@ -18,10 +18,16 @@ void init(void) {
 
 	// GPIO configuration
 	// PA2 = triggers SH/LD on external shift register
+	/* turn off for testing
 	GPIOA->MODER &= ~(3U << 4);	//reset
 	GPIOA->MODER |= (2U << 4); //sets AF for PA2
 	GPIOA->AFRL &= ~(0xFU << 8);	// reset
 	GPIOA->AFRL |= (2U << 8);	//sets AF2 for TIM2_CH3
+	*/
+	GPIOA->MODER &= ~(3U << 4);
+	GPIOA->MODER |= (1U << 4);	// NORMAL OUT
+	GPIOA->OSPEEDR |= (2U << 4);
+	GPIOA->BSSRL = (1U <<2);	// LOGICAL 1 (SH/LD HIGH)
 	// PA5 = SPI1_SCK, triggers CLK on external shift register
 	GPIOA->MODER &= ~(3U << 10);	//resets
 	GPIOA->MODER |= (2U << 10);	//sets AF for PA5
@@ -34,6 +40,7 @@ void init(void) {
 	GPIOA->MODER |= (2U << 12);	// sets PA6 to AF
 	GPIOA->AFRL &= ~(0xFU << 24);
 	GPIOA->AFRL |= (5U << 24);		// AF5 = SPI1_MISO
+	GPIOA->OSPEEDR |= (2U << 12);
 	GPIOA->PUPDR &= ~(3U << 12);
 	GPIOA->PUPDR |= (1U << 12);	// pull-up
 
@@ -80,9 +87,29 @@ void init(void) {
 int main(void)
 {
 	init();
-
+	/*
 	while (1) {
 		uint8_t current_data = spi_buffer;
 		// use the data
+	}
+	*/
+
+	SPI1->CR2 &= ~(1U << 0);
+
+	while (1) {
+		GPIOA->BSSRH = (1U << 2);
+		for (volatile int d=0; d<20; d++);
+		GPIOA->BSSRL = (1U << 2);
+		for (volatile int d=0; d<20; d++);
+
+		volatile uint32_t clear_flags = SPI1->DR;
+		clear_flags = SPI1->SR;
+
+		SPI1->DR = 0x00;
+
+		while (!(SPI1->SR & (1U << 0)));
+		uint8_t current_data = SPI1->DR;
+		spi_buffer = SPI1->DR;
+		for (volatile int i = 0; i<500000; i++);
 	}
 }
