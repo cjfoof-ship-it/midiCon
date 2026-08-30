@@ -9,7 +9,14 @@ reading takes place in the background, it does not block the main loop
  * this interrupt generates Latch pulse, starts **SPI1** clock and reads 8 bits into global variable spi_buffer
 
 # pinout
-
+STM:  GND   -----   GND   (PIN 8)   :SN74HC165N
+      3V    -----   VCC   (PIN 16)
+      PA2   -----   SH/LD   (PIN 1)
+      PA5   -----   CLK   (PIN 2)
+      PA6   -----   QH   (PIN 9)
+                     CLK INH (PIN 15) to GND
+                     PINS 3,4,5,6,11,12,13,14 to buttons (inputs)
+                     when connected in daisy-chain, connect shift registers: SER (PIN 10) to QH (PIN 9)
 
 # gotchas
  * on shift register, Clock Inhibit (pin 15) has to be connected to **GND**, otherwise internal clock does not work properly and MISO reads static value
@@ -27,7 +34,7 @@ To read the data, access global variable **spi_buffer** in main loop
 
 # roadmap
 To continue with this project, these are the following steps:
-* [] **Amplify the hardware - Daisy chaining** to add more control buttons. When using 2 shift registers, change SPI to read 2 bytes.
+* [x] **Amplify the hardware - Daisy chaining** to add more control buttons (DONE, now set to 2 shift registers, but can be adjusted in variable NUMBER_OF_REGISTERS)
 * [] **Data parsing** to transfer bits into concrete readable values that describes the actual state of the buttons
 * [] **Send data via UART**, implement periphery USART/UART to send data into PC/module
 * [] **MIDI protocol**, formatting data into standard MIDI messages for implementation of midiCon as a MIDI controller 
