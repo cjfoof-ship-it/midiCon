@@ -6,8 +6,8 @@
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
 #endif
 
-
-volatile uint8_t spi_buffer = 0;
+#define NUMBER_OF_REGISTERS 2
+volatile uint8_t spi_buffer[NUMBER_OF_REGISTERS];
 
 void init(void) {
 	// allow clock for all used peripherals
@@ -64,13 +64,13 @@ void TIM2_IRQHandler(void) {
 			for (volatile int d=0; d<20; d++);
 			GPIOA->BSRRL = (1U << 2);	// PA2 tO HIGH
 
-			volatile uint32_t clear_flags = SPI1->DR;
-			clear_flags = SPI1->SR;
-			SPI1->DR = 0x00;		// starts clock at PA5
-
-			while(!(SPI1->SR & (1U << 0)));	// no more bits in queue
-			spi_buffer = SPI1->DR;
-
+			for (int i= 0; i < NUMBER_OF_REGISTERS; i++) {
+				volatile uint32_t clear_flags = SPI1->DR;
+				clear_flags = SPI1->SR;
+				SPI1->DR = 0x00;		// starts clock at PA5
+				while(!(SPI1->SR & (1U << 0)));	// no more bits in queue
+				spi_buffer[i] = (uint8_t)SPI1->DR;
+			}
 		}
 	}
 }
@@ -80,7 +80,9 @@ int main(void)
 	init();
 
 	while (1) {
-		uint8_t current_data = spi_buffer;
+		uint8_t current_data0 = spi_buffer[0];
+		uint8_t current_data1 = spi_buffer[1];
+		for (volatile uint8_t j; j<5; j++);
 		// use the data
 	}
 
