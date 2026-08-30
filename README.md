@@ -10,13 +10,13 @@ reading takes place in the background, it does not block the main loop
 
 # pinout
 STM:  GND   -----   GND   (PIN 8)   :SN74HC165N  
-      3V    -----   VCC   (PIN 16)
-      PA2   -----   SH/LD   (PIN 1)
-      PA5   -----   CLK   (PIN 2)
-      PA6   -----   QH   (PIN 9)
-                     CLK INH (PIN 15) to GND
-                     PINS 3,4,5,6,11,12,13,14 to buttons (inputs)
-                     when connected in daisy-chain, connect shift registers: SER (PIN 10) to QH (PIN 9)
+      3V    -----   VCC   (PIN 16)  
+      PA2   -----   SH/LD   (PIN 1)  
+      PA5   -----   CLK   (PIN 2)  
+      PA6   -----   QH   (PIN 9)  
+                     CLK INH (PIN 15) to GND  
+                     PINS 3,4,5,6,11,12,13,14 to buttons (inputs)  
+                     when connected in daisy-chain, connect shift registers: SER (PIN 10) to QH (PIN 9)  
 
 # gotchas
  * on shift register, Clock Inhibit (pin 15) has to be connected to **GND**, otherwise internal clock does not work properly and MISO reads static value
