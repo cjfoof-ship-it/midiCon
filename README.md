@@ -9,7 +9,7 @@ reading takes place in the background, it does not block the main loop
  * this interrupt generates Latch pulse, starts **SPI1** clock and reads 8 bits into global variable spi_buffer
 
 # pinout
-STM:  GND   -----   GND   (PIN 8)   :SN74HC165N
+STM:  GND   -----   GND   (PIN 8)   :SN74HC165N  
       3V    -----   VCC   (PIN 16)
       PA2   -----   SH/LD   (PIN 1)
       PA5   -----   CLK   (PIN 2)
