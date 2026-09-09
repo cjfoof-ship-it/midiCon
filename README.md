@@ -1,12 +1,14 @@
 #midiCon - shift register reader (SN74HC165N)
 
-This subproject reads digital inputs from buttons via 8-bit parallel shift register **SN74HC165N** and writes them into variable on **STM32f407g**.
+This project reads digital inputs from buttons via 8-bit parallel shift register **SN74HC165N** and writes them into variable on **STM32f407g**. Later on, these data are processed and turned into MIDI commands.
 
 # architecture
 reading takes place in the background, it does not block the main loop
  * hardware timer **TIM2** has period of 100ms (10 Hz)
  * every overload calls interrupt TIM2_IRQHandler
  * this interrupt generates Latch pulse, starts **SPI1** clock and reads 8 bits into global variable spi_buffer
+
+turning raw data into MIDI commands is done in **main** function and in function **send_signal**
 
 # pinout
 STM:  GND   -----   GND   (PIN 8)   :SN74HC165N  
@@ -30,11 +32,11 @@ The core logic and configuration are here:
  * Inc/midiCon.h  - custom peripheral structures and memory base addresses
    
 # read the data
-To read the data, access global variable **spi_buffer** in main loop
+To read the data, access global variable **spi_buffer** in main loop. To read actual MIDI commands to be send, read variables in function 'send_signal()' or you can see it as arguments in function 'message()'
 
 # roadmap
 To continue with this project, these are the following steps:
 * [x] **Amplify the hardware - Daisy chaining** to add more control buttons (DONE, now set to 2 shift registers, but can be adjusted in variable NUMBER_OF_REGISTERS)
-* [] **Data parsing** to transfer bits into concrete readable values that describes the actual state of the buttons
+* [X] **Data parsing** to transfer bits into concrete readable values that describes the actual state of the buttons
 * [] **Send data via UART**, implement periphery USART/UART to send data into PC/module
-* [] **MIDI protocol**, formatting data into standard MIDI messages for implementation of midiCon as a MIDI controller 
+* [X] **MIDI protocol**, formatting data into standard MIDI messages for implementation of midiCon as a MIDI controller 
