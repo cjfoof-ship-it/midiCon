@@ -8,6 +8,8 @@
 
 #define NUMBER_OF_REGISTERS 2
 volatile uint8_t spi_buffer[NUMBER_OF_REGISTERS];
+volatile uint8_t last_byte0 = 0;
+volatile uint8_t last_byte1 = 0;
 
 void init(void) {
 	// allow clock for all used peripherals
@@ -75,6 +77,25 @@ void TIM2_IRQHandler(void) {
 	}
 }
 
+
+void message(int to_send) {
+	// send the data via UART
+}
+
+// function for process the input data (state of buttons, pressed or released) and turn them into MIDI commands
+void send_signal(uint8_t buttons, uint8_t base, int command) {
+	for (uint8_t i = 0; i <= 7; i++) {
+		uint8_t mask = (1 << i);
+		if (buttons & mask) {
+			uint8_t tone = 0x18 + base + i;
+			message(command);		// what should be done (0x90 = note ON, 0x80 = note OFF)
+			message(tone);			// which tone to turn ON/OFF
+			message(0x7F);			// velocity (always 127, we're not going to deal with velocity-sensitive keys in this project)
+		}
+	}
+}
+
+
 int main(void)
 {
 	init();
@@ -84,6 +105,20 @@ int main(void)
 		uint8_t current_data1 = spi_buffer[1];
 		for (volatile uint8_t j; j<5; j++);
 		// use the data
+		uint8_t changed_data0 = current_data0 ^ last_byte0;		// check what data have been changed since the last loop
+		uint8_t pressed0 = current_data0 & changed_data0;		// check which of these were actually pressed
+		uint8_t released0 = last_byte0 & changed_data0;			// check which of these were released
+		last_byte0 = current_data0;
+
+		uint8_t changed_data1 = current_data1 ^ last_byte1;
+		uint8_t pressed1 = current_data1 & changed_data1;
+		uint8_t released1 = last_byte1 & changed_data1;
+		last_byte1 = current_data1;
+
+		send_signal(pressed0, 0, 0x90);
+		send_signal(released0, 0, 0x80);
+		send_signal(pressed1, 8, 0x90);
+		send_signal(released1, 8, 0x80);
 	}
 
 
