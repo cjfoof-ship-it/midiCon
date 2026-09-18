@@ -50,7 +50,7 @@ void init(void) {
 	// SPI1 configuration
 	SPI1->CR1 = 0;					// reset of CR1, all bits to 0
 	SPI1->CR1 |= (1U << 2);			// select master mode
-	SPI1->CR1 |= (3U << 3);			// baud rate 84MHz / 16
+	SPI1->CR1 |= (5U << 3);			// baud rate 84MHz / 64
 	SPI1->CR1 |= (1U << 9);			// NSS directed by software
 	SPI1->CR1 |= (1U << 8);			// sets this bit to 1, the value of physical NSS pin is ignored (NSS = negative slave select, but my external shift register doesn't need it)
 	SPI1->CR1 &= ~(1U << 11);		// 0 is for 8-bit data
@@ -128,8 +128,8 @@ int main(void)
 		uint8_t released0 = (~last_byte0) & changed_data0;			// check which of these were released
 		last_byte0 = current_data0;
 
-		uint8_t changed_data1 = current_data1 ^ last_byte1;		//0000 0001
-		uint8_t pressed1 = (~current_data1) & changed_data1;		//0000 0001
+		uint8_t changed_data1 = current_data1 ^ last_byte1;		
+		uint8_t pressed1 = (~current_data1) & changed_data1;	
 		uint8_t released1 = (~last_byte1) & changed_data1;
 		last_byte1 = current_data1;
 
