@@ -31,6 +31,7 @@ typedef struct {
 	volatile uint16_t	BSRRH;	// high 16 bits to reset on 0x18
 	uint32_t			DUMMY3;
 	volatile uint32_t	AFRL;	//0x20
+	volatile uint32_t	AFRH;	//0x24
 
 
 } GPIO_TypeDef;
@@ -52,6 +53,15 @@ typedef struct {
 	volatile uint32_t	CCR3;	//0x3C
 } TIM_TypeDef;
 
+// USART
+typedef struct {
+	volatile uint32_t	SR;		//0x00
+	volatile uint32_t	DR;		//0x04
+	volatile uint32_t	BRR;	//0x08
+	volatile uint32_t	CR1;	//0x0C
+	volatile uint32_t	CR2;	//0x10
+} USART_TypeDef;
+
 // SPI
 typedef struct {
 	volatile uint32_t	CR1;	//0x00
@@ -70,6 +80,7 @@ typedef struct {
 #define GPIOA	((GPIO_TypeDef *) 0x40020000UL)
 #define TIM2	((TIM_TypeDef *) 0x40000000UL)
 #define SPI1	((SPI_TypeDef *) 0x40013000UL)
+#define USART1	((USART_TypeDef *) 0x40011000UL)
 #define NVIC	((NVIC_TypeDef *) 0xE000E100UL)
 
 

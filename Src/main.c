@@ -16,6 +16,7 @@ void init(void) {
 	RCC->AHB1ENR |= (1U << 0);	// for GPIOA
 	RCC->APB1ENR |= (1U << 0);	// for TIM2
 	RCC->APB2ENR |= (1U << 12);	// for SPI1
+	RCC->APB2ENR |= (1U << 4);	// for USART1
 
 	// GPIO configuration
 	// PA2 = triggers SH/LD on external shift register
@@ -38,6 +39,13 @@ void init(void) {
 	GPIOA->OSPEEDR |= (2U << 12);
 	GPIOA->PUPDR &= ~(3U << 12);
 	GPIOA->PUPDR |= (1U << 12);	// pull-up
+	// PA 9 to AF 7 (alternate function for USART1 TX
+	GPIOA->MODER &= ~(3U << 18);
+	GPIOA->MODER |= (2U << 18);	// sets PA9 to AF
+	GPIOA->AFRH &= ~(0xFU << 4);
+	GPIOA->AFRH |= (7U << 4);		// AF7 = USART1_TX
+	GPIOA->PUPDR &= ~(3U << 18);
+	GPIOA->PUPDR |= (1U << 18);	// pull-up
 
 	// SPI1 configuration
 	SPI1->CR1 = 0;					// reset of CR1, all bits to 0
@@ -54,6 +62,13 @@ void init(void) {
 	TIM2->DIER |= (1U << 0);		// update event can start interrupt
 	NVIC->ISER |= (1U << 28);		// specific interrupt (28)
 	TIM2->CR1 |= (1U << 0);			// start TIM2
+
+	// USART1 configuration
+	USART1->CR1 |= (1 << 13);		// USART1 enabled
+	USART1->CR1 &= ~(1 <<12);		// 1 start bit, 8 data bits
+	USART1->CR2 &= ~(3 << 12);		// 1 stop bit
+	USART1->BRR = (32 << 4);		// baud = clk / (8*(2-OVER8)*USARTDIV		USARTDIV = 32, so fractional part = 0, mantissa = 32
+	USART1->CR1 |= (1 << 3);		// enable transmitter
 
 
 }
@@ -80,6 +95,9 @@ void TIM2_IRQHandler(void) {
 
 void message(int to_send) {
 	// send the data via UART
+	while (!(USART1->SR & (1 << 7))); // TXE is bit 7 (transmit data register is empty
+	USART1->DR = to_send;
+	while(!(USART1->SR & (1 << 6)));	// wait for transmission complete (TC) flag is 1
 }
 
 // function for process the input data (state of buttons, pressed or released) and turn them into MIDI commands
@@ -103,21 +121,25 @@ int main(void)
 	while (1) {
 		uint8_t current_data0 = spi_buffer[0];
 		uint8_t current_data1 = spi_buffer[1];
-		for (volatile uint8_t j; j<5; j++);
+		for (volatile uint8_t j =0; j<5; j++);
 		// use the data
 		uint8_t changed_data0 = current_data0 ^ last_byte0;		// check what data have been changed since the last loop
-		uint8_t pressed0 = current_data0 & changed_data0;		// check which of these were actually pressed
-		uint8_t released0 = last_byte0 & changed_data0;			// check which of these were released
+		uint8_t pressed0 = (~current_data0) & changed_data0;		// check which of these were actually pressed
+		uint8_t released0 = (~last_byte0) & changed_data0;			// check which of these were released
 		last_byte0 = current_data0;
 
-		uint8_t changed_data1 = current_data1 ^ last_byte1;
-		uint8_t pressed1 = current_data1 & changed_data1;
-		uint8_t released1 = last_byte1 & changed_data1;
+		uint8_t changed_data1 = current_data1 ^ last_byte1;		//0000 0001
+		uint8_t pressed1 = (~current_data1) & changed_data1;		//0000 0001
+		uint8_t released1 = (~last_byte1) & changed_data1;
 		last_byte1 = current_data1;
 
+		if (pressed0 != 0)
 		send_signal(pressed0, 0, 0x90);
+		if (released0 != 0)
 		send_signal(released0, 0, 0x80);
+		if (pressed1 != 0)
 		send_signal(pressed1, 8, 0x90);
+		if (released1 != 0)
 		send_signal(released1, 8, 0x80);
 	}
 
