@@ -38,5 +38,6 @@ To read the data, access global variable **spi_buffer** in main loop. To read ac
 To continue with this project, these are the following steps:
 * [x] **Amplify the hardware - Daisy chaining** to add more control buttons (DONE, now set to 2 shift registers, but can be adjusted in variable NUMBER_OF_REGISTERS)
 * [X] **Data parsing** to transfer bits into concrete readable values that describes the actual state of the buttons
-* [] **Send data via UART**, implement periphery USART/UART to send data into PC/module
-* [X] **MIDI protocol**, formatting data into standard MIDI messages for implementation of midiCon as a MIDI controller 
+* [X] **Send data via UART**, implement periphery USART/UART to send data into PC/module
+* [X] **MIDI protocol**, formatting data into standard MIDI messages for implementation of midiCon as a MIDI controller
+* [ ] **test with logic analyzer**
