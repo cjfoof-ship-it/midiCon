@@ -10,11 +10,13 @@
 volatile uint8_t spi_buffer[NUMBER_OF_REGISTERS];
 volatile uint8_t last_byte0 = 0;
 volatile uint8_t last_byte1 = 0;
+volatile uint8_t new_data_ready = 0;
 
 void init(void) {
 	// allow clock for all used peripherals
 	RCC->AHB1ENR |= (1U << 0);	// for GPIOA
 	RCC->APB1ENR |= (1U << 0);	// for TIM2
+	RCC->APB1ENR |= (1U << 3);	// for TIM5
 	RCC->APB2ENR |= (1U << 12);	// for SPI1
 	RCC->APB2ENR |= (1U << 4);	// for USART1
 
@@ -47,6 +49,16 @@ void init(void) {
 	GPIOA->PUPDR &= ~(3U << 18);
 	GPIOA->PUPDR |= (1U << 18);	// pull-up
 
+	// PA7 !!! FOR TEST !!!
+	GPIOA->MODER &= ~(3U << 14);
+	GPIOA->MODER |= (1U << 14);	// sets PA7 to OUT
+
+	GPIOA->OSPEEDR &= ~(3U << 14);
+	GPIOA->OSPEEDR |= (3U << 14);
+
+	GPIOA->PUPDR &= ~(3U << 14);
+	GPIOA->PUPDR |= (1U << 14);	// pull-up
+
 	// SPI1 configuration
 	SPI1->CR1 = 0;					// reset of CR1, all bits to 0
 	SPI1->CR1 |= (1U << 2);			// select master mode
@@ -56,12 +68,20 @@ void init(void) {
 	SPI1->CR1 &= ~(1U << 11);		// 0 is for 8-bit data
 	SPI1->CR1 |= (1U << 6);			// enables SPI
 
+	// TIM5 configuration !!! FOR TEST !!!
+	TIM5->CR1 = 0;
+	for(volatile int i = 0; i < 1000; i++);
+	TIM5->PSC = 8;				// 16MHz / 8 = 2MHz
+	TIM5->ARR = 56;				// 2MHz / 64 = 31250
+
 	// TIM2 configuration
-	TIM2->PSC = 8399;				// 84MHz / psc = 10kHz
+
+	TIM2->PSC = 159;				// 84MHz / psc = 10kHz
 	TIM2->ARR = 999;				// 10kHz / arr = 10Hz, 100ms
 	TIM2->DIER |= (1U << 0);		// update event can start interrupt
 	NVIC->ISER |= (1U << 28);		// specific interrupt (28)
 	TIM2->CR1 |= (1U << 0);			// start TIM2
+
 
 	// USART1 configuration
 	USART1->CR1 |= (1 << 13);		// USART1 enabled
@@ -87,28 +107,70 @@ void TIM2_IRQHandler(void) {
 				SPI1->DR = 0x00;		// starts clock at PA5
 				while(!(SPI1->SR & (1U << 0)));	// no more bits in queue
 				spi_buffer[i] = (uint8_t)SPI1->DR;
+				if (i == (NUMBER_OF_REGISTERS - 1)) {
+					new_data_ready = 1;		// signal to main loop that scanning is done
+				}
 			}
 		}
 	}
 }
 
 
+void sendTEST(volatile uint8_t nums) {
+	// split the message and send it into an array + add start and stop bit
+	uint8_t my_array[10];
+	my_array[0] = 0;
+	for (uint8_t j = 1; j < 9; j++) {
+		my_array[j] = nums % 2;
+		nums = nums / 2;
+	}
+	my_array[9] = 1;
+
+	// start the clock
+	TIM5->CR1 |= (1U << 0);
+
+	for (uint8_t i = 0; i < 10; i++) {
+		// when overflow, send the array[i]
+		while(!(TIM5->SR & (1U << 0)));
+		TIM5->SR &= ~(1U << 0);			// reset the flag
+		if (my_array[i] == 0) {
+			GPIOA->ODR &= ~(1U << 7);
+		}
+		else {GPIOA->ODR |= (1U << 7);
+		}
+
+
+
+	}
+	TIM5->CR1 &= ~(1U << 0);
+}
+
 void message(int to_send) {
 	// send the data via UART
 	while (!(USART1->SR & (1 << 7))); // TXE is bit 7 (transmit data register is empty
+
+
 	USART1->DR = to_send;
+
 	while(!(USART1->SR & (1 << 6)));	// wait for transmission complete (TC) flag is 1
 }
 
 // function for process the input data (state of buttons, pressed or released) and turn them into MIDI commands
 void send_signal(uint8_t buttons, uint8_t base, int command) {
 	for (uint8_t i = 0; i <= 7; i++) {
-		uint8_t mask = (1 << i);
-		if (buttons & mask) {
+
+		if ((buttons >> i) & 1) {
 			uint8_t tone = 0x18 + base + i;
+			/*
 			message(command);		// what should be done (0x90 = note ON, 0x80 = note OFF)
 			message(tone);			// which tone to turn ON/OFF
 			message(0x7F);			// velocity (always 127, we're not going to deal with velocity-sensitive keys in this project)
+			*/
+
+			// !!! FOR TESTING PURPOSES !!!
+			sendTEST(command);
+			sendTEST(tone);
+			sendTEST(0x7F);
 		}
 	}
 }
@@ -119,29 +181,36 @@ int main(void)
 	init();
 
 	while (1) {
-		uint8_t current_data0 = spi_buffer[0];
-		uint8_t current_data1 = spi_buffer[1];
-		for (volatile uint8_t j =0; j<5; j++);
-		// use the data
-		uint8_t changed_data0 = current_data0 ^ last_byte0;		// check what data have been changed since the last loop
-		uint8_t pressed0 = (~current_data0) & changed_data0;		// check which of these were actually pressed
-		uint8_t released0 = (~last_byte0) & changed_data0;			// check which of these were released
-		last_byte0 = current_data0;
 
-		uint8_t changed_data1 = current_data1 ^ last_byte1;		
-		uint8_t pressed1 = (~current_data1) & changed_data1;	
-		uint8_t released1 = (~last_byte1) & changed_data1;
-		last_byte1 = current_data1;
+		 if (new_data_ready) {
+			new_data_ready = 0;		// clear the flag
 
-		if (pressed0 != 0)
-		send_signal(pressed0, 0, 0x90);
-		if (released0 != 0)
-		send_signal(released0, 0, 0x80);
-		if (pressed1 != 0)
-		send_signal(pressed1, 8, 0x90);
-		if (released1 != 0)
-		send_signal(released1, 8, 0x80);
+
+
+			uint8_t current_data0 = spi_buffer[0];
+			uint8_t current_data1 = spi_buffer[1];
+			for (volatile uint8_t j =0; j<5; j++);
+			// use the data
+			uint8_t changed_data0 = current_data0 ^ last_byte0;		// check what data have been changed since the last loop
+			uint8_t pressed0 = (~current_data0) & changed_data0;		// check which of these were actually pressed
+			uint8_t released0 = (~last_byte0) & changed_data0;			// check which of these were released
+			last_byte0 = current_data0;
+
+			uint8_t changed_data1 = current_data1 ^ last_byte1;
+			uint8_t pressed1 = (~current_data1) & changed_data1;
+			uint8_t released1 = (~last_byte1) & changed_data1;
+			last_byte1 = current_data1;
+
+			if (pressed0 != 0)
+				send_signal(pressed0, 0, 0x90);
+			if (released0 != 0)
+				send_signal(released0, 0, 0x80);
+			if (pressed1 != 0)
+				send_signal(pressed1, 8, 0x90);
+			if (released1 != 0)
+				send_signal(released1, 8, 0x80);
+		}
+
 	}
-
 
 }

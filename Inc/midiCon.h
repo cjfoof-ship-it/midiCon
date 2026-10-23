@@ -26,7 +26,8 @@ typedef struct {
 	uint32_t			DUMMY;
 	volatile uint32_t	OSPEEDR;	//0x08
 	volatile uint32_t	PUPDR;		//0x0C
-	uint32_t			DUMMY2[2];
+	uint32_t			DUMMY2;
+	volatile uint32_t	ODR;		//0x14
 	volatile uint16_t	BSRRL;	// low 16 bits to set on 0x18
 	volatile uint16_t	BSRRH;	// high 16 bits to reset on 0x18
 	uint32_t			DUMMY3;
@@ -79,6 +80,7 @@ typedef struct {
 #define RCC		((RCC_TypeDef *) 0x40023800UL)
 #define GPIOA	((GPIO_TypeDef *) 0x40020000UL)
 #define TIM2	((TIM_TypeDef *) 0x40000000UL)
+#define TIM5	((TIM_TypeDef *) 0x40000C00UL)
 #define SPI1	((SPI_TypeDef *) 0x40013000UL)
 #define USART1	((USART_TypeDef *) 0x40011000UL)
 #define NVIC	((NVIC_TypeDef *) 0xE000E100UL)
