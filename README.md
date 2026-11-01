@@ -1,6 +1,12 @@
+# this is README for DEBUG VERSION of midiCon project
+
 #midiCon - shift register reader (SN74HC165N)
 
 This project reads digital inputs from buttons via 8-bit parallel shift register **SN74HC165N** and writes them into variable on **STM32f407g**. Later on, these data are processed and turned into MIDI commands.
+
+# KNOWN ISSUES
+* **UART Data Corruption:** The UART peripheral transmits corrupted data and requires further debugging. The issue is suspected to be caused by either internal conflicts within the USART peripheral interrupts or hardware instability on pin PA9 due to internal MCU multiplexing and cross-connections.
+
 
 # architecture
 reading takes place in the background, it does not block the main loop
@@ -8,7 +14,7 @@ reading takes place in the background, it does not block the main loop
  * every overload calls interrupt TIM2_IRQHandler
  * this interrupt generates Latch pulse, starts **SPI1** clock and reads 8 bits into global variable spi_buffer
 
-turning raw data into MIDI commands is done in **main** function and in function **send_signal**
+turning raw data into MIDI commands is done in **main** function and in function **sendTEST** (in this version)
 
 # pinout
 STM:  GND   -----   GND   (PIN 8)   :SN74HC165N  
@@ -19,12 +25,15 @@ STM:  GND   -----   GND   (PIN 8)   :SN74HC165N
                      CLK INH (PIN 15) to GND  
                      PINS 3,4,5,6,11,12,13,14 to buttons (inputs)  
                      when connected in daisy-chain, connect shift registers: SER (PIN 10) to QH (PIN 9)  
+                     
+To send data out as MIDI message, pin PA7 is used in this version.
+                     
 
 # gotchas
  * on shift register, Clock Inhibit (pin 15) has to be connected to **GND**, otherwise internal clock does not work properly and MISO reads static value
  * pin PA6 is configured with **internal pull-up** --> if disconnected, it gives stable 1
  * **Decoupling Capacitor (100nF):** Placed as close as possible between **Pin 16 (VCC)** and **Pin 8 (GND)** of the SN74HC165N. This suppresses voltage drops and noise caused by high-speed SPI clock switching.
- *  **Button Pull-Up Resistors (10kΩ):** The circuit implements configuration where buttons switch to **GND**. Each digital input pin (D0–D7) of the shift register is connected to **3.3V (VCC)** via a 10kΩ pull-up resistor to maintain a stable logic `1` when the button is open. Pressing a button pulls the corresponding input pin directly to **GND**, creating a logic `0`. This matches the internal pull-up configuration on the STM32 `PA6` (MISO) line, ensuring consistent active-low signal logic across the system.
+ *  **Button Pull-Up Resistors (10kΩ):** The circuit implements configuration where buttons switch to **GND**. Each digital input pin (D0–D7) of the shift register is connected to **3.3V (VCC)** via a 10kΩ pull-up resistor to maintain a stable logic `1` when the button is open. Pressing a button pulls the corresponding input pin directly to **GND**, creating a logic `0`. This matches the internal pull-up configuration on the STM32 `PA6` (MISO) line, ensuring consistent active-low signal logic across the system. To prevent signal noise and debouncing issues, a **100nF capacitor** and a **1kΩ resistor** are added to each button. This forms a simple RC low-pass filter that suppresses contact bounce and protects the inputs against sudden voltage transients during rapid switching.
 
 # file locations
 The core logic and configuration are here:
@@ -40,4 +49,4 @@ To continue with this project, these are the following steps:
 * [X] **Data parsing** to transfer bits into concrete readable values that describes the actual state of the buttons
 * [X] **Send data via UART**, implement periphery USART/UART to send data into PC/module
 * [X] **MIDI protocol**, formatting data into standard MIDI messages for implementation of midiCon as a MIDI controller
-* [ ] **test with logic analyzer**
+* [X] **test with logic analyzer**
